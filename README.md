@@ -134,5 +134,3 @@ python manage.py migrate
 
 Neon note: use a direct connection string for migrations if you run into pooling-related migration issues. [web:6][web:86]
 
-## License
-MIT (or replace with your preferred license)
