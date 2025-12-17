@@ -1,0 +1,351 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <title>Mentions Dashboard</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+    <style>
+      :root {
+        /* Modern Dark Palette */
+        --bg-dark: #0f111a;
+        --panel-bg: rgba(30, 35, 48, 0.6);
+        --panel-border: rgba(255, 255, 255, 0.08);
+        --text-main: #e2e8f0;
+        --text-muted: #94a3b8;
+        --accent-primary: #8b5cf6; /* Violet */
+        --accent-hover: #7c3aed;
+        --success: #10b981;
+        --radius: 12px;
+        --shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+      }
+
+      * { box-sizing: border-box; }
+
+      body {
+        margin: 0;
+        font-family: 'Inter', system-ui, -apple-system, sans-serif;
+        background-color: var(--bg-dark);
+        /* Subtle mesh gradient background */
+        background-image: 
+          radial-gradient(at 0% 0%, rgba(139, 92, 246, 0.15) 0px, transparent 50%),
+          radial-gradient(at 100% 100%, rgba(16, 185, 129, 0.1) 0px, transparent 50%);
+        background-attachment: fixed;
+        color: var(--text-main);
+        min-height: 100vh;
+        -webkit-font-smoothing: antialiased;
+      }
+
+      .container {
+        max-width: 1000px;
+        margin: 0 auto;
+        padding: 40px 24px;
+      }
+
+      /* Header Section */
+      header {
+        margin-bottom: 32px;
+        display: flex;
+        justify-content: space-between;
+        align-items: flex-end;
+      }
+
+      .header-content h1 {
+        margin: 0;
+        font-size: 28px;
+        font-weight: 700;
+        letter-spacing: -0.02em;
+        background: linear-gradient(to right, #fff, #cbd5e1);
+        -webkit-background-clip: text;
+        -webkit-text-fill-color: transparent;
+      }
+
+      .header-content p {
+        margin: 8px 0 0;
+        color: var(--text-muted);
+        font-size: 14px;
+      }
+
+      .badge {
+        font-size: 12px;
+        padding: 6px 12px;
+        border-radius: 9999px;
+        background: rgba(139, 92, 246, 0.1);
+        border: 1px solid rgba(139, 92, 246, 0.2);
+        color: #a78bfa;
+        font-weight: 500;
+      }
+
+      /* Grid Layout */
+      .dashboard-grid {
+        display: grid;
+        grid-template-columns: 280px 1fr;
+        gap: 24px;
+      }
+
+      @media (max-width: 768px) {
+        .dashboard-grid {
+          grid-template-columns: 1fr;
+        }
+      }
+
+      /* Cards */
+      .card {
+        background: var(--panel-bg);
+        backdrop-filter: blur(12px);
+        -webkit-backdrop-filter: blur(12px);
+        border: 1px solid var(--panel-border);
+        border-radius: var(--radius);
+        box-shadow: var(--shadow);
+        overflow: hidden;
+        display: flex;
+        flex-direction: column;
+      }
+
+      .card-header {
+        padding: 16px 20px;
+        border-bottom: 1px solid var(--panel-border);
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        background: rgba(255,255,255,0.02);
+      }
+
+      .card-header h2 {
+        margin: 0;
+        font-size: 14px;
+        font-weight: 600;
+        text-transform: uppercase;
+        letter-spacing: 0.05em;
+        color: var(--text-muted);
+      }
+
+      .card-body {
+        padding: 20px;
+        flex: 1;
+      }
+
+      /* Form Controls */
+      .form-group {
+        margin-bottom: 16px;
+      }
+
+      .form-group label {
+        display: block;
+        margin-bottom: 8px;
+        font-size: 13px;
+        color: var(--text-muted);
+        font-weight: 500;
+      }
+
+      .input-control {
+        width: 100%;
+        padding: 10px 12px;
+        background: rgba(15, 23, 42, 0.6);
+        border: 1px solid var(--panel-border);
+        border-radius: 8px;
+        color: var(--text-main);
+        font-size: 14px;
+        transition: all 0.2s ease;
+      }
+
+      .input-control:focus {
+        outline: none;
+        border-color: var(--accent-primary);
+        box-shadow: 0 0 0 2px rgba(139, 92, 246, 0.15);
+      }
+
+      /* Button */
+      .btn-primary {
+        width: 100%;
+        padding: 10px;
+        background: var(--accent-primary);
+        color: white;
+        border: none;
+        border-radius: 8px;
+        font-size: 14px;
+        font-weight: 600;
+        cursor: pointer;
+        transition: background 0.2s;
+        margin-top: 8px;
+      }
+
+      .btn-primary:hover {
+        background: var(--accent-hover);
+      }
+
+      .btn-primary:disabled {
+        opacity: 0.7;
+        cursor: wait;
+      }
+
+      /* Status Text */
+      .status-text {
+        margin-top: 16px;
+        font-size: 13px;
+        color: var(--text-muted);
+        text-align: center;
+      }
+
+      /* Chart Container */
+      .chart-container {
+        position: relative;
+        height: 350px;
+        width: 100%;
+      }
+
+      /* Utility */
+      .text-success { color: var(--success); font-weight: 600; }
+    </style>
+  </head>
+  <body>
+
+    <div class="container">
+      <header>
+        <div class="header-content">
+          <h1>Mentions Dashboard</h1>
+          <p>Real-time analytics from Postgres & HN Algolia</p>
+        </div>
+        <div class="badge">Live Data</div>
+      </header>
+
+      <div class="dashboard-grid">
+        
+        <!-- Controls Panel -->
+        <aside class="card">
+          <div class="card-header">
+            <h2>Configuration</h2>
+          </div>
+          <div class="card-body">
+            <div class="form-group">
+              <label for="keywordId">Keyword ID</label>
+              <input type="number" id="keywordId" class="input-control" value="1" min="1">
+            </div>
+
+            <div class="form-group">
+              <label for="days">Time Range (Days)</label>
+              <input type="number" id="days" class="input-control" value="365" min="1">
+            </div>
+
+            <button id="loadBtn" class="btn-primary">Generate Report</button>
+            <div id="status" class="status-text">Ready to load.</div>
+          </div>
+        </aside>
+
+        <!-- Visualization Panel -->
+        <main class="card">
+          <div class="card-header">
+            <h2>Timeline Analysis</h2>
+            <div id="countDisplay" class="text-success">0 Mentions</div>
+          </div>
+          <div class="card-body">
+            <div class="chart-container">
+              <canvas id="chart"></canvas>
+            </div>
+          </div>
+        </main>
+
+      </div>
+    </div>
+
+    <script>
+      const ctx = document.getElementById("chart");
+      const loadBtn = document.getElementById("loadBtn");
+      const statusText = document.getElementById("status");
+      const countDisplay = document.getElementById("countDisplay");
+
+      // Global chart instance
+      let myChart;
+
+      // Initialize Chart.js with dark theme settings
+      Chart.defaults.color = '#94a3b8';
+      Chart.defaults.borderColor = 'rgba(255,255,255,0.05)';
+
+      async function loadData() {
+        const keywordId = document.getElementById("keywordId").value;
+        const days = document.getElementById("days").value;
+
+        // UI Loading State
+        loadBtn.disabled = true;
+        loadBtn.textContent = "Loading...";
+        statusText.textContent = "Fetching data from API...";
+
+        try {
+          const res = await fetch(`/api/reports/mentions_daily/?keyword_id=${keywordId}&days=${days}`);
+          if (!res.ok) throw new Error("API Request Failed");
+          
+          const data = await res.json();
+          const labels = data.map(r => r.day);
+          const counts = data.map(r => r.count);
+          const total = counts.reduce((a, b) => a + b, 0);
+
+          // Update UI
+          countDisplay.textContent = `${total} Mentions`;
+          statusText.textContent = `Successfully loaded ${data.length} data points.`;
+
+          // Destroy old chart if exists
+          if (myChart) myChart.destroy();
+
+          // Render New Chart
+          myChart = new Chart(ctx, {
+            type: "line",
+            data: {
+              labels: labels,
+              datasets: [{
+                label: "Daily Mentions",
+                data: counts,
+                borderColor: "#8b5cf6",
+                backgroundColor: "rgba(139, 92, 246, 0.15)",
+                borderWidth: 2,
+                pointBackgroundColor: "#8b5cf6",
+                pointRadius: 3,
+                pointHoverRadius: 5,
+                fill: true,
+                tension: 0.3 // smooth curves
+              }]
+            },
+            options: {
+              responsive: true,
+              maintainAspectRatio: false,
+              plugins: {
+                legend: { display: false },
+                tooltip: {
+                  mode: 'index',
+                  intersect: false,
+                  backgroundColor: 'rgba(15, 23, 42, 0.9)',
+                  titleColor: '#e2e8f0',
+                  bodyColor: '#cbd5e1',
+                  borderColor: 'rgba(255,255,255,0.1)',
+                  borderWidth: 1
+                }
+              },
+              scales: {
+                y: {
+                  beginAtZero: true,
+                  grid: { color: 'rgba(255, 255, 255, 0.05)' }
+                },
+                x: {
+                  grid: { display: false }
+                }
+              }
+            }
+          });
+
+        } catch (err) {
+          console.error(err);
+          statusText.textContent = "Error loading data.";
+          statusText.style.color = "#ef4444";
+        } finally {
+          loadBtn.disabled = false;
+          loadBtn.textContent = "Generate Report";
+        }
+      }
+
+      loadBtn.addEventListener("click", loadData);
+      
+      // Auto-load on start
+      loadData();
+    </script>
+  </body>
+</html>
